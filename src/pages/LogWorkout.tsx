@@ -22,6 +22,7 @@ import * as z from "zod";
 import { format } from 'date-fns';
 import { WorkoutType } from '../types';
 import { toast } from "@/hooks/use-toast";
+import {supabase} from "../services/supabaseClient"
 
 const formSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters" }).max(50),
@@ -51,18 +52,48 @@ const LogWorkout: React.FC = () => {
     },
   });
   
-  const onSubmit = (data: FormValues) => {
-    console.log('Workout submitted:', data);
-    
-    // Show success toast
-    toast({
-      title: "Workout logged successfully",
-      description: "Your workout has been saved",
-    });
-    
-    // Navigate to workouts page
-    navigate('/workouts');
-  };
+  const onSubmit = async (data: FormValues) => {
+    // 1. Get the logged-in user
+    const { data: { user }, error: userErr } = await supabase.auth.getUser()
+    if (userErr || !user) {
+      toast({
+        title: "Not logged in",
+        description: "Please log in and try again.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // 2. Insert into your "workouts" table
+    const { error: insertErr } = await supabase
+      .from('workouts')
+      .insert({
+        user_id:    user.id,
+        title:      data.title,
+        type:       data.type,
+        date:       data.date,
+        duration:   data.duration,
+        distance:   data.distance ?? null,
+        calories:   data.calories ?? null,
+        notes:      data.notes,
+      })
+
+    // 3. Handle success / error
+    if (insertErr) {
+      toast({
+        title: "Failed to save workout",
+        description: insertErr.message,
+        variant: "destructive",
+      })
+    } else {
+      toast({
+        title: "Workout logged",
+        description: "Your workout has been saved.",
+      })
+      navigate('/workouts')
+    }
+  }
+
   
   const workoutTypeIcons: Record<WorkoutType, string> = {
     run: "🏃‍♂️",

@@ -1,15 +1,29 @@
-
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, LogIn } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "../services/supabaseClient"; // ✅ Import your client
 
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -21,7 +35,7 @@ type FormValues = z.infer<typeof formSchema>;
 const Login: React.FC = () => {
   const [showPassword, setShowPassword] = React.useState(false);
   const navigate = useNavigate();
-  
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -29,25 +43,34 @@ const Login: React.FC = () => {
       password: "",
     },
   });
-  
-  const onSubmit = (data: FormValues) => {
-    // Mock login functionality
-    console.log('Login submitted:', data);
-    
-    // Show success toast
-    toast({
-      title: "Login successful",
-      description: "Welcome back to PulseTrack!",
+
+  const onSubmit = async (data: FormValues) => {
+    const { email, password } = data;
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
     });
-    
-    // Navigate to home page
-    navigate('/');
+
+    if (error) {
+      toast({
+        title: "Login failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Login successful",
+        description: "Welcome back to PulseTrack!",
+      });
+      navigate("/");
+    }
   };
-  
+
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
-  
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
@@ -55,11 +78,11 @@ const Login: React.FC = () => {
           <div className="flex justify-center mb-2">
             <svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 text-blue-600">
               <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"></circle>
-              <path 
-                d="M12 6v6l4 2" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
+              <path
+                d="M12 6v6l4 2"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
                 strokeLinejoin="round"
               ></path>
             </svg>
@@ -79,11 +102,7 @@ const Login: React.FC = () => {
                     <FormControl>
                       <div className="relative">
                         <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                        <Input 
-                          placeholder="you@example.com" 
-                          className="pl-10" 
-                          {...field} 
-                        />
+                        <Input placeholder="you@example.com" className="pl-10" {...field} />
                       </div>
                     </FormControl>
                     <FormMessage />

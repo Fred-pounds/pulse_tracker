@@ -15,6 +15,10 @@ import CreateChallenge from "./pages/CreateChallenge";
 import Friends from "./pages/Friends";
 import LogWorkout from "./pages/LogWorkout";
 import Notifications from "./pages/Notifications";
+import { ProtectedRoute, PublicRoute } from "./services/protected-routes";
+import { AuthProvider } from "./services/auth-provider"; 
+import VerifyEmail from "./pages/verify-email";
+
 
 const queryClient = new QueryClient();
 
@@ -23,24 +27,33 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/workouts" element={<MyWorkouts />} />
-          <Route path="/all-workouts" element={<AllWorkouts />} />
-          <Route path="/challenges" element={<Challenges />} />
-          <Route path="/create-challenge" element={<CreateChallenge />} />
-          <Route path="/friends" element={<Friends />} />
-          <Route path="/log-workout" element={<LogWorkout />} />
-          <Route path="/notifications" element={<Notifications />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+  <Route element={<PublicRoute />}>
+    <Route path="/login" element={<Login />} />
+    <Route path="/register" element={<Register />} />
+  </Route>
+
+  <Route element={<ProtectedRoute />}>
+    <Route path="/" element={<Index />} />
+    <Route path="/workouts" element={<MyWorkouts />} />
+    <Route path="/all-workouts" element={<AllWorkouts />} />
+    <Route path="/verify-email" element={< VerifyEmail />} />
+    <Route path="/challenges" element={<Challenges />} />
+    <Route path="/create-challenge" element={<CreateChallenge />} />
+    <Route path="/friends" element={<Friends />} />
+    <Route path="/log-workout" element={<LogWorkout />} />
+    <Route path="/notifications" element={<Notifications />} />
+  </Route>
+
+  <Route path="*" element={<NotFound />} />
+</Routes>
+        </BrowserRouter>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
+
 
 export default App;

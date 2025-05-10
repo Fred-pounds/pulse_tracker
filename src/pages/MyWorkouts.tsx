@@ -1,5 +1,4 @@
 
-import React, { useState } from 'react';
 import Header from '../components/Header';
 import WorkoutList from '../components/WorkoutList';
 import LogWorkoutButton from '../components/LogWorkoutButton';
@@ -7,80 +6,52 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, List, ArrowDown, Filter } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Workout } from '../types';
 import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../services/supabaseClient';
+import { Workout } from '../types'
 
-const mockWorkouts: Workout[] = [
-  {
-    id: '1',
-    userId: '1',
-    type: 'run',
-    title: 'Morning Run',
-    date: '2025-05-06T08:30:00.000Z',
-    duration: 35,
-    distance: 5.2,
-    calories: 420,
-    notes: 'Felt great today. Good pace throughout.',
-    likes: 12,
-    comments: 3
-  },
-  {
-    id: '2',
-    userId: '1',
-    type: 'gym',
-    title: 'Upper Body Workout',
-    date: '2025-05-05T17:45:00.000Z',
-    duration: 50,
-    calories: 380,
-    notes: 'Focus on chest and back. Increased weights on bench press.',
-    likes: 8,
-    comments: 1
-  },
-  {
-    id: '3',
-    userId: '1',
-    type: 'cycle',
-    title: 'Weekend Ride',
-    date: '2025-05-04T10:15:00.000Z',
-    duration: 75,
-    distance: 22.5,
-    calories: 680,
-    notes: 'Long route through the park and hills. Great weather.',
-    likes: 15,
-    comments: 5
-  },
-  {
-    id: '4',
-    userId: '1',
-    type: 'swim',
-    title: 'Pool Session',
-    date: '2025-05-03T14:00:00.000Z',
-    duration: 40,
-    distance: 1.5,
-    calories: 350,
-    notes: 'Worked on freestyle technique. Felt smooth in the water.',
-    likes: 6,
-    comments: 2
-  },
-  {
-    id: '5',
-    userId: '1',
-    type: 'run',
-    title: 'Interval Training',
-    date: '2025-05-02T07:15:00.000Z',
-    duration: 45,
-    distance: 6.8,
-    calories: 520,
-    notes: 'High intensity intervals. Tough but productive session.',
-    likes: 10,
-    comments: 4
-  }
-];
+
 
 const MyWorkouts: React.FC = () => {
   const [selectedFilter, setSelectedFilter] = useState<string>("all");
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [workouts, setWorkouts] = useState<Workout[]>([]);
+const [loading, setLoading]   = useState(true);
+
+useEffect(() => {
+  const loadWorkouts = async () => {
+    setLoading(true);
+    // 1) Get session → user
+    const { data: { session }, error: sessErr } = await supabase.auth.getSession();
+    if (sessErr || !session) {
+      console.error('No session:', sessErr);
+      setWorkouts([]);
+      setLoading(false);
+      return;
+    }
+
+    // 2) Fetch workouts belonging to this user
+    const { data: wData, error: wErr } = await supabase
+      .from('workouts')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .order('date', { ascending: false }); // newest first
+
+    if (wErr) {
+      console.error('Error fetching workouts:', wErr);
+      setWorkouts([]);
+    } else {
+      setWorkouts(wData || []);
+    }
+    setLoading(false);
+  };
+
+  loadWorkouts();
+}, []);
   
+
+
   const filterWorkouts = (workouts: Workout[]): Workout[] => {
     let filtered = [...workouts];
     
@@ -100,14 +71,14 @@ const MyWorkouts: React.FC = () => {
     return filtered;
   };
   
-  const filteredWorkouts = filterWorkouts(mockWorkouts);
+  const filteredWorkouts = filterWorkouts(workouts);
   const currentDate = new Date();
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
   
   const workoutsByDate = daysInMonth.map(day => {
-    const workoutsOnDay = mockWorkouts.filter(workout => {
+    const workoutsOnDay = workouts.filter(workout => {
       const workoutDate = parseISO(workout.date);
       return isSameDay(workoutDate, day);
     });
@@ -118,6 +89,15 @@ const MyWorkouts: React.FC = () => {
       hasWorkouts: workoutsOnDay.length > 0
     };
   });
+
+  if (loading) {
+    return (
+      <div className="p-8 text-center">
+        Loading your workouts…
+      </div>
+    );
+  }
+  
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -246,7 +226,7 @@ const MyWorkouts: React.FC = () => {
                   <div className="mt-6">
                     <h3 className="text-lg font-medium mb-4">{format(selectedDate, 'MMMM d, yyyy')}</h3>
                     <WorkoutList 
-                      workouts={mockWorkouts.filter(workout => {
+                      workouts={workouts.filter(workout => {
                         const workoutDate = parseISO(workout.date);
                         return isSameDay(workoutDate, selectedDate);
                       })} 

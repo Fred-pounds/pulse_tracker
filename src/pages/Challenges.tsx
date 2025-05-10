@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import { Button } from "@/components/ui/button";
 import { 
@@ -13,115 +13,152 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Search, Filter, Plus, Calendar, Users, Trophy } from 'lucide-react';
 import { Input } from "@/components/ui/input";
-import { Challenge } from '../types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from "@/components/ui/badge";
 import { Link, useNavigate } from 'react-router-dom';
-
+import { supabase } from '../services/supabaseClient';
+import { Challenge, Profile } from '../types';
 // Mock challenges data
-const mockChallenges: Challenge[] = [
-  {
-    id: '1',
-    title: 'May Running Challenge',
-    description: 'Run at least 50km during this month',
-    goal: {
-      type: 'distance',
-      value: 50
-    },
-    startDate: '2025-05-01T00:00:00.000Z',
-    endDate: '2025-05-31T23:59:59.000Z',
-    participants: [
-      { userId: '1', progress: 68 },
-      { userId: '2', progress: 42 },
-      { userId: '3', progress: 85 },
-      { userId: '4', progress: 15 }
-    ],
-    createdBy: '3'
-  },
-  {
-    id: '2',
-    title: 'Weekly Workout Streak',
-    description: 'Complete at least 5 workouts this week',
-    goal: {
-      type: 'workouts',
-      value: 5
-    },
-    startDate: '2025-05-05T00:00:00.000Z',
-    endDate: '2025-05-11T23:59:59.000Z',
-    participants: [
-      { userId: '1', progress: 60 },
-      { userId: '2', progress: 80 },
-      { userId: '4', progress: 40 }
-    ],
-    createdBy: '2'
-  },
-  {
-    id: '3',
-    title: 'Summer Cycling Challenge',
-    description: 'Cycle 100km in two weeks',
-    goal: {
-      type: 'distance',
-      value: 100
-    },
-    startDate: '2025-05-15T00:00:00.000Z',
-    endDate: '2025-05-29T23:59:59.000Z',
-    participants: [
-      { userId: '1', progress: 25 },
-      { userId: '3', progress: 42 }
-    ],
-    createdBy: '1'
-  },
-  {
-    id: '4',
-    title: 'Month of Fitness',
-    description: 'Exercise for at least 20 hours this month',
-    goal: {
-      type: 'duration',
-      value: 20
-    },
-    startDate: '2025-05-01T00:00:00.000Z',
-    endDate: '2025-05-31T23:59:59.000Z',
-    participants: [
-      { userId: '1', progress: 45 },
-      { userId: '2', progress: 30 },
-      { userId: '3', progress: 55 },
-      { userId: '4', progress: 70 }
-    ],
-    createdBy: '4'
-  }
-];
+// const mockChallenges: Challenge[] = [
+//   {
+//     id: '1',
+//     title: 'May Running Challenge',
+//     description: 'Run at least 50km during this month',
+//     goal: {
+//       type: 'distance',
+//       value: 50
+//     },
+//     startDate: '2025-05-01T00:00:00.000Z',
+//     endDate: '2025-05-31T23:59:59.000Z',
+//     participants: [
+//       { userId: '1', progress: 68 },
+//       { userId: '2', progress: 42 },
+//       { userId: '3', progress: 85 },
+//       { userId: '4', progress: 15 }
+//     ],
+//     createdBy: '3'
+//   },
+//   {
+//     id: '2',
+//     title: 'Weekly Workout Streak',
+//     description: 'Complete at least 5 workouts this week',
+//     goal: {
+//       type: 'workouts',
+//       value: 5
+//     },
+//     startDate: '2025-05-05T00:00:00.000Z',
+//     endDate: '2025-05-11T23:59:59.000Z',
+//     participants: [
+//       { userId: '1', progress: 60 },
+//       { userId: '2', progress: 80 },
+//       { userId: '4', progress: 40 }
+//     ],
+//     createdBy: '2'
+//   },
+//   {
+//     id: '3',
+//     title: 'Summer Cycling Challenge',
+//     description: 'Cycle 100km in two weeks',
+//     goal: {
+//       type: 'distance',
+//       value: 100
+//     },
+//     startDate: '2025-05-15T00:00:00.000Z',
+//     endDate: '2025-05-29T23:59:59.000Z',
+//     participants: [
+//       { userId: '1', progress: 25 },
+//       { userId: '3', progress: 42 }
+//     ],
+//     createdBy: '1'
+//   },
+//   {
+//     id: '4',
+//     title: 'Month of Fitness',
+//     description: 'Exercise for at least 20 hours this month',
+//     goal: {
+//       type: 'duration',
+//       value: 20
+//     },
+//     startDate: '2025-05-01T00:00:00.000Z',
+//     endDate: '2025-05-31T23:59:59.000Z',
+//     participants: [
+//       { userId: '1', progress: 45 },
+//       { userId: '2', progress: 30 },
+//       { userId: '3', progress: 55 },
+//       { userId: '4', progress: 70 }
+//     ],
+//     createdBy: '4'
+//   }
+// ];
 
 // Mock users
-const mockUsers = [
-  {
-    id: '1',
-    name: 'John Doe',
-    avatar: 'https://randomuser.me/api/portraits/men/32.jpg'
-  },
-  {
-    id: '2',
-    name: 'Emma Wilson',
-    avatar: 'https://randomuser.me/api/portraits/women/65.jpg'
-  },
-  {
-    id: '3',
-    name: 'Mike Brown',
-    avatar: 'https://randomuser.me/api/portraits/men/45.jpg'
-  },
-  {
-    id: '4',
-    name: 'Sarah Chen',
-    avatar: 'https://randomuser.me/api/portraits/women/28.jpg'
-  }
-];
+// const mockUsers = [
+//   {
+//     id: '1',
+//     name: 'John Doe',
+//     avatar: 'https://randomuser.me/api/portraits/men/32.jpg'
+//   },
+//   {
+//     id: '2',
+//     name: 'Emma Wilson',
+//     avatar: 'https://randomuser.me/api/portraits/women/65.jpg'
+//   },
+//   {
+//     id: '3',
+//     name: 'Mike Brown',
+//     avatar: 'https://randomuser.me/api/portraits/men/45.jpg'
+//   },
+//   {
+//     id: '4',
+//     name: 'Sarah Chen',
+//     avatar: 'https://randomuser.me/api/portraits/women/28.jpg'
+//   }
+// ];
 
 const Challenges: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("active");
   const navigate = useNavigate();
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const [profiles, setProfiles]     = useState<Profile[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [userId, setUserId] = useState(null);
+
+  useEffect(() => {
+
+    
+    const loadData = async () => {
+      setLoading(true);
+      // Inside your component, before filtering:
+const { data: { session } } = await supabase.auth.getSession();
+setUserId(session?.user?.id);
+
+
+      // 1) Fetch challenges
+      const { data: cData, error: cErr } = await supabase
+        .from('challenges')
+        .select('*')
+        .order('startDate', { ascending: true });
+      if (cErr) console.error('Failed to load challenges:', cErr);
+      else setChallenges(cData || []);
+
+      // 2) Fetch user profiles (for avatars/names)
+      const { data: pData, error: pErr } = await supabase
+        .from('users')
+        .select('*');
+      if (pErr) console.error('Failed to load profiles:', pErr);
+      else setProfiles(pData || []);
+
+      setLoading(false);
+    };
+
+    loadData();
+  }, []);
+  
+
   
   // Filter challenges based on search term and active tab
-  const filteredChallenges = mockChallenges
+  const filteredChallenges = challenges
     .filter(challenge => 
       challenge.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       challenge.description.toLowerCase().includes(searchTerm.toLowerCase())
@@ -138,15 +175,15 @@ const Challenges: React.FC = () => {
       } else if (activeTab === "past") {
         return now > endDate;
       } else if (activeTab === "my") {
-        return challenge.participants.some(p => p.userId === '1'); // Assuming logged in user id is '1'
+        return challenge.participants.some(p => p.userId === userId); // Assuming logged in user id is '1'
       }
       return true;
     });
   
   // Get creator information for each challenge
-  const getChallengeCreator = (createdById: string) => {
-    return mockUsers.find(user => user.id === createdById);
-  };
+  const getChallengeCreator = (createdById: string) =>
+    profiles.find((u) => u.id === createdById);
+  
   
   // Format date range
   const formatDateRange = (startDate: string, endDate: string) => {
@@ -172,6 +209,15 @@ const Challenges: React.FC = () => {
         return `${goal.value}`;
     }
   };
+
+  if (loading) {
+    return (
+      <div className="p-8 text-center">
+        Loading challenges…
+      </div>
+    );
+  }
+  
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -248,15 +294,22 @@ const Challenges: React.FC = () => {
                         <div className="flex justify-between items-center text-sm">
                           <span className="font-medium">Participants</span>
                           <div className="flex -space-x-2">
-                            {challenge.participants.slice(0, 3).map((participant, index) => {
-                              const user = mockUsers.find(u => u.id === participant.userId);
-                              return (
-                                <Avatar key={index} className="h-6 w-6 border-2 border-white">
-                                  <AvatarImage src={user?.avatar} alt={user?.name} />
-                                  <AvatarFallback>{user?.name.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                              );
-                            })}
+                          {challenge.participants.slice(0, 3).map((p, idx) => {
+  const user = profiles.find(u => u.id === p.userId);
+  return (
+    <Avatar key={idx} className="h-6 w-6 border-2 border-white">
+      {user ? (
+        <>
+          <AvatarImage src={user.avatar} alt={user.name}/>
+          <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+        </>
+      ) : (
+        <AvatarFallback>?</AvatarFallback>
+      )}
+    </Avatar>
+  );
+})}
+
                             {challenge.participants.length > 3 && (
                               <div className="h-6 w-6 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-xs">
                                 +{challenge.participants.length - 3}

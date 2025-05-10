@@ -1,5 +1,4 @@
 
-import React from 'react';
 import Header from '../components/Header';
 import StatCard from '../components/StatCard';
 import WorkoutList from '../components/WorkoutList';
@@ -12,9 +11,73 @@ import {
   activeChallenges, 
   leaderboard 
 } from '../data/mockData';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState, useEffect } from 'react'
+import { supabase } from '@/services/supabaseClient'
+import { Workout, Challenge } from '@/types' 
 
-const Index = () => {
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+const Index: React.FC = () => {
+  const [workouts, setWorkouts] = useState<Workout[]>([])
+  const [challenges, setChallenges] = useState<Challenge[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true)
+     
+  // Option A: cached session (client-side)
+    const { data: { session }, error: sessionErr } = await supabase.auth.getSession()
+    if (sessionErr || !session) { /* handle missing session */ }
+    const user = session.user
+
+
+        // Fetch workouts for this user
+        const { data: wData, error: wErr } = await supabase
+        .from('workouts')
+        .select('*')
+        .eq('user_id', user.id)
+      if (wErr) console.error(wErr)
+      else setWorkouts(wData || [])
+
+      // Fetch active challenges
+      const { data: cData, error: cErr } = await supabase
+        .from('challenges')
+        .select('*')
+        .eq('user_id', user.id)
+      if (cErr) console.error(cErr)
+      else setChallenges(cData || [])
+
+      setLoading(false)
+    }
+    loadData()
+  }, [])
+
+    // default zeros
+    let totalWorkouts = 0
+    let totalDuration = 0 // in seconds
+    let totalDistance = 0 // in km
+    let weeklyStreak = 0
+  
+    if (workouts.length > 0) {
+      totalWorkouts = workouts.length
+      totalDuration = workouts.reduce((sum, w) => sum + (w.duration || 0), 0)
+      totalDistance = workouts.reduce((sum, w) => sum + (w.distance || 0), 0)
+  
+      // Simple streak: count how many days in a row up to today have at least one workout.
+      const dates = new Set(workouts.map(w => new Date(w.date).toDateString()))
+      for (let i = 0; ; i++) {
+        const d = new Date()
+        d.setDate(d.getDate() - i)
+        if (dates.has(d.toDateString())) weeklyStreak++
+        else break
+      }
+    }
+  
+    if (loading) {
+      return <div className="p-8 text-center">Loading…</div>
+    }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -33,44 +96,7 @@ const Index = () => {
           
           <LogWorkoutButton />
         </div>
-        
-        {/* Stats grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-          <StatCard
-            title="Weekly Streak"
-            value={`${currentUser.stats.weeklyStreak} days`}
-            icon="streak"
-            trend={{ value: 20, isPositive: true }}
-          />
-          
-          <StatCard
-            title="Total Workouts"
-            value={currentUser.stats.totalWorkouts}
-            icon="workouts"
-            progress={currentUser.stats.weeklyProgress}
-          />
-          
-          <StatCard
-            title="Total Duration"
-            value={`${Math.round(currentUser.stats.totalDuration / 60)} hrs`}
-            icon="duration"
-            trend={{ value: 5, isPositive: true }}
-          />
-          
-          <StatCard
-            title="Total Distance"
-            value={`${currentUser.stats.totalDistance.toFixed(1)} km`}
-            icon="distance"
-            progress={currentUser.stats.monthlyProgress}
-          />
-        </div>
-        
-        {/* Two column layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Column 1: Workouts and Stats */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Recent workouts */}
-            <section>
+        <section>
               <div className="section-header">
                 <h2 className="text-xl font-semibold">Recent Workouts</h2>
                 <a href="/workouts" className="text-sm text-blue-600 hover:underline">
@@ -80,24 +106,52 @@ const Index = () => {
               
               <WorkoutList workouts={recentWorkouts} />
             </section>
-            
-            {/* Challenges grid */}
-            <section>
-              <div className="section-header">
-                <h2 className="text-xl font-semibold">Active Challenges</h2>
-                <a href="/challenges" className="text-sm text-blue-600 hover:underline">
-                  View all
-                </a>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                {activeChallenges.map(challenge => (
-                  <ChallengeCard key={challenge.id} challenge={challenge} />
-                ))}
-              </div>
-            </section>
+           {/* Stats grid */}
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+          <StatCard title="Weekly Streak" value={`${weeklyStreak} days`} icon="streak" trend={{ value: weeklyStreak, isPositive: weeklyStreak>0 }} />
+          <StatCard title="Total Workouts" value={totalWorkouts} icon="workouts" progress={workouts.length? undefined : 0} />
+          <StatCard title="Total Duration" value={`${Math.round(totalDuration/3600)} hrs`} icon="duration" trend={{ value: totalDuration, isPositive: totalDuration>0 }} />
+          <StatCard title="Total Distance" value={`${totalDistance.toFixed(1)} km`} icon="distance" progress={workouts.length? undefined : 0} />
+        </div>
+        
+        {/* Two column layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Column 1: Workouts and Stats */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Recent workouts */}
+        <section className="mb-8">
+          <div className="section-header">
+            <h2 className="text-xl font-semibold">Recent Workouts</h2>
+            <a href="/workouts" className="text-sm text-blue-600 hover:underline">View all</a>
           </div>
+          {workouts.length === 0 ? (
+            <div className="p-8 text-center text-gray-500 italic">
+              All your workouts will show here.
+            </div>
+          ) : (
+            <WorkoutList workouts={workouts.slice(0, 5)} />
+          )}
+        </section>
           
+           {/* Active Challenges */}
+        <section className="mb-8">
+          <div className="section-header">
+            <h2 className="text-xl font-semibold">Active Challenges</h2>
+            <a href="/challenges" className="text-sm text-blue-600 hover:underline">View all</a>
+          </div>
+          {challenges.length === 0 ? (
+            <div className="p-8 text-center text-gray-500 italic">
+              All your challenges will show here.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              {challenges.map(c => (
+                <ChallengeCard key={c.id} challenge={c} />
+              ))}
+            </div>
+          )}
+        </section>
+          </div>
           {/* Column 2: Leaderboard and quick actions */}
           <div className="space-y-8">
             {/* Global leaderboard */}

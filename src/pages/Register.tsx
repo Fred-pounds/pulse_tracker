@@ -10,6 +10,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "../services/supabaseClient"; 
+
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
@@ -38,18 +40,54 @@ const Register: React.FC = () => {
     },
   });
   
-  const onSubmit = (data: FormValues) => {
-    // Mock register functionality
-    console.log('Register submitted:', data);
-    
-    // Show success toast
+  const onSubmit = async (data: FormValues) => {
+    const { name, email, password } = data;
+  
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { name },
+        emailRedirectTo: `${window.location.origin}/verify-email`
+      },
+    });
+  
+    if (signUpError) {
+      toast({
+        title: "Registration failed",
+        description: signUpError.message,
+        variant: "destructive",
+      });
+      return;
+    }
+  
+    const user = signUpData.user;
+  
+    if (user) {
+      const { error: dbError } = await supabase
+        .from("users")
+        .insert({
+          id: user.id,
+          name,
+          email,
+        });
+  
+      if (dbError) {
+        toast({
+          title: "User saved to auth but not DB",
+          description: dbError.message,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+  
     toast({
       title: "Registration successful",
-      description: "Welcome to PulseTrack!",
+      description: "Check your email to verify your account.",
     });
-    
-    // Navigate to home page
-    navigate('/');
+  
+    navigate("/login");
   };
   
   return (

@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import {supabase} from "../services/supabaseClient";
 
 // Form schema
 const formSchema = z.object({
@@ -80,17 +81,47 @@ const CreateChallenge: React.FC = () => {
     },
   });
 
-  function onSubmit(values: FormValues) {
-    console.log(values);
-    // Here we would normally save the challenge to Supabase
-    
-    toast({
-      title: "Challenge created!",
-      description: "Your challenge has been created successfully.",
-    });
-    
-    navigate('/challenges');
-  }
+  const onSubmit = async (values: FormValues) => {
+    // 1. Get current user
+    const { data: { user }, error: userErr } = await supabase.auth.getUser();
+    if (userErr || !user) {
+      toast({
+        title: "Not logged in",
+        description: "Please log in and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // 2. Insert into "challenges" table
+    const { error: insertErr } = await supabase
+      .from("challenges")
+      .insert({
+        user_id:    user.id,
+        title:      values.title,
+        description:values.description,
+        goal_type:  values.goalType,
+        goal_value: values.goalValue,
+        start_date: values.startDate.toISOString().split("T")[0],
+        end_date:   values.endDate.toISOString().split("T")[0],
+        privacy:    values.privacyType,
+      });
+
+    // 3. Handle response
+    if (insertErr) {
+      toast({
+        title: "Failed to create challenge",
+        description: insertErr.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Challenge created!",
+        description: "Your challenge has been created successfully.",
+      });
+      navigate("/challenges");
+    }
+  };
 
   const getGoalLabel = (type: string): string => {
     switch(type) {
