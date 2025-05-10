@@ -40,19 +40,16 @@ export interface Challenge {
   id: string;
   title: string;
   description: string;
-  goal: {
-    type: 'distance' | 'duration' | 'workouts';
-    value: number;
-  };
-  startDate: string;
-  endDate: string;
-  participants: {
-    userId: string;
-    progress: number; // percentage
-  }[];
-  createdBy: string;
-  created_at?: string; // Supabase timestamp
+  goal_type: 'distance' | 'duration' | 'workouts';
+  goal_value: number;
+  start_date: string;       // ISO date string
+  end_date: string;         // ISO date string
+  privacy: 'public' | 'friends' | 'private';
+  participants: { userId: string; progress: number }[];
+  created_by: string;
+  created_at: string;
 }
+
 
 export interface LeaderboardEntry {
   user: {

@@ -35,6 +35,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import {supabase} from "../services/supabaseClient";
+import { Challenge, Profile } from '../types';
+
 
 // Form schema
 const formSchema = z.object({
@@ -93,20 +95,27 @@ const CreateChallenge: React.FC = () => {
       return;
     }
 
-    // 2. Insert into "challenges" table
-    const { error: insertErr } = await supabase
-      .from("challenges")
-      .insert({
-        user_id:    user.id,
-        title:      values.title,
-        description:values.description,
-        goal_type:  values.goalType,
-        goal_value: values.goalValue,
-        start_date: values.startDate.toISOString().split("T")[0],
-        end_date:   values.endDate.toISOString().split("T")[0],
-        privacy:    values.privacyType,
-      });
+    
+  // 2) Build the row payload
+  const row: Omit<Challenge, 'id' | 'created_at'> = {
+    title:       values.title,
+    description: values.description,
+    goal_type:   values.goalType,
+    goal_value:  values.goalValue,
+    start_date:  values.startDate.toISOString().split('T')[0],
+    end_date:    values.endDate.toISOString().split('T')[0],
+    privacy:     values.privacyType,
+    participants: [
+      { userId: user.id, progress: 4 },
+    ],               // initially empty
+    created_by:  user.id,
+  };
 
+  // 3) Insert
+  const { data, error: insertErr } = await supabase
+    .from('challenges')
+    .insert(row)
+    .select();
     // 3. Handle response
     if (insertErr) {
       toast({

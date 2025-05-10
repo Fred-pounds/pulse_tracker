@@ -9,11 +9,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface ChallengeCardProps {
   challenge: Challenge;
+
 }
 
 const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge }) => {
   // Calculate user progress
-  const userProgress = challenge.participants.find(p => p.userId === '1')?.progress || 0;
+  const userProgress = challenge.participants.find(p => p.userId === challenge.created_by)?.progress || 0;
   
   // Format dates
   const formatDate = (dateString: string) => {
@@ -38,7 +39,7 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge }) => {
           <div className="flex items-center">
             <Calendar size={14} className="mr-1" />
             <span>
-              {formatDate(challenge.startDate)} - {formatDate(challenge.endDate)}
+              {formatDate(challenge.start_date)} - {formatDate(challenge.end_date)}
             </span>
           </div>
           

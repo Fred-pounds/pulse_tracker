@@ -7,8 +7,6 @@ import Leaderboard from '../components/Leaderboard';
 import LogWorkoutButton from '../components/LogWorkoutButton';
 import { 
   currentUser, 
-  recentWorkouts, 
-  activeChallenges, 
   leaderboard 
 } from '../data/mockData';
 import React, { useState, useEffect } from 'react'
@@ -44,9 +42,10 @@ const Index: React.FC = () => {
       const { data: cData, error: cErr } = await supabase
         .from('challenges')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('created_by', user.id)
       if (cErr) console.error(cErr)
       else setChallenges(cData || [])
+    console.log(cData)
 
       setLoading(false)
     }
@@ -96,16 +95,22 @@ const Index: React.FC = () => {
           
           <LogWorkoutButton />
         </div>
-        <section>
+        {/* <section>
               <div className="section-header">
                 <h2 className="text-xl font-semibold">Recent Workouts</h2>
                 <a href="/workouts" className="text-sm text-blue-600 hover:underline">
                   View all
                 </a>
-              </div>
+              </div> */}
               
-              <WorkoutList workouts={recentWorkouts} />
-            </section>
+              {/* {workouts.length === 0 ? (
+            <div className="p-8 text-center text-gray-500 italic">
+              All your workouts will show here.
+            </div>
+          ) : (
+            <WorkoutList workouts={workouts.slice(0, 5)} />
+          )} */}
+            {/* </section> */}
            {/* Stats grid */}
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
           <StatCard title="Weekly Streak" value={`${weeklyStreak} days`} icon="streak" trend={{ value: weeklyStreak, isPositive: weeklyStreak>0 }} />
@@ -136,7 +141,7 @@ const Index: React.FC = () => {
            {/* Active Challenges */}
         <section className="mb-8">
           <div className="section-header">
-            <h2 className="text-xl font-semibold">Active Challenges</h2>
+            <h2 className="text-xl font-semibold">My Challenges</h2>
             <a href="/challenges" className="text-sm text-blue-600 hover:underline">View all</a>
           </div>
           {challenges.length === 0 ? (
@@ -167,7 +172,7 @@ const Index: React.FC = () => {
                 <a href="/friends" className="py-2 px-3 bg-gray-100 rounded-md hover:bg-gray-200 text-center text-sm font-medium">
                   Find Friends
                 </a>
-                <a href="/challenges/new" className="py-2 px-3 bg-gray-100 rounded-md hover:bg-gray-200 text-center text-sm font-medium">
+                <a href="/create-challenge" className="py-2 px-3 bg-gray-100 rounded-md hover:bg-gray-200 text-center text-sm font-medium">
                   Create Challenge
                 </a>
                 <a href="/workouts" className="py-2 px-3 bg-gray-100 rounded-md hover:bg-gray-200 text-center text-sm font-medium">

@@ -138,7 +138,8 @@ setUserId(session?.user?.id);
       const { data: cData, error: cErr } = await supabase
         .from('challenges')
         .select('*')
-        .order('startDate', { ascending: true });
+        .order('start_date', { ascending: true });
+        console.log(cData);
       if (cErr) console.error('Failed to load challenges:', cErr);
       else setChallenges(cData || []);
 
@@ -159,26 +160,30 @@ setUserId(session?.user?.id);
   
   // Filter challenges based on search term and active tab
   const filteredChallenges = challenges
-    .filter(challenge => 
-      challenge.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      challenge.description.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .filter(challenge => {
-      const now = new Date();
-      const startDate = new Date(challenge.startDate);
-      const endDate = new Date(challenge.endDate);
-      
-      if (activeTab === "active") {
-        return now >= startDate && now <= endDate;
-      } else if (activeTab === "upcoming") {
-        return now < startDate;
-      } else if (activeTab === "past") {
-        return now > endDate;
-      } else if (activeTab === "my") {
-        return challenge.participants.some(p => p.userId === userId); // Assuming logged in user id is '1'
-      }
+  .filter(ch =>
+    ch.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    ch.description.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+  .filter(challenge => {
+    if (activeTab === 'all') {
       return true;
-    });
+    }
+    const now = new Date();
+    const startDate = new Date(challenge.start_date);
+    const endDate   = new Date(challenge.end_date);
+
+    if (activeTab === 'active') {
+      return now >= startDate && now <= endDate;
+    } else if (activeTab === 'upcoming') {
+      return now < startDate;
+    } else if (activeTab === 'past') {
+      return now > endDate;
+    } else if (activeTab === 'my') {
+      return userId ? challenge.participants.some(p => p.userId === userId) : false;
+    }
+    return true;
+  });
+
   
   // Get creator information for each challenge
   const getChallengeCreator = (createdById: string) =>
@@ -196,17 +201,17 @@ setUserId(session?.user?.id);
   
   // Get goal text
   const getGoalText = (challenge: Challenge) => {
-    const { goal } = challenge;
+    const { goal_type,goal_value} = challenge;
     
-    switch (goal.type) {
+    switch (goal_type) {
       case 'distance':
-        return `${goal.value} km`;
+        return `${goal_value} km`;
       case 'duration':
-        return `${goal.value} hours`;
+        return `${goal_value} hours`;
       case 'workouts':
-        return `${goal.value} workouts`;
+        return `${goal_value} workouts`;
       default:
-        return `${goal.value}`;
+        return `${goal_value}`;
     }
   };
 
@@ -245,9 +250,10 @@ setUserId(session?.user?.id);
           </div>
         </div>
         
-        <Tabs defaultValue="active" className="space-y-4" onValueChange={setActiveTab}>
+        <Tabs defaultValue="all" className="space-y-4" onValueChange={setActiveTab}>
           <div className="flex items-center justify-between">
             <TabsList>
+            <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="active">Active</TabsTrigger>
               <TabsTrigger value="my">My Challenges</TabsTrigger>
               <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
@@ -259,19 +265,106 @@ setUserId(session?.user?.id);
               Filter
             </Button>
           </div>
+          <TabsContent value="all" className="space-y-0">
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {filteredChallenges.map(challenge => {
+      const creator = getChallengeCreator(challenge.created_by);
+      return (
+        <Card key={challenge.id} className="h-full overflow-hidden hover:shadow-md transition-shadow">
+        <CardHeader className="bg-gradient-to-r from-blue-100 to-purple-100 pb-2">
+          <div className="mb-2 flex justify-between items-start">
+            <Badge variant="outline" className="bg-white/70 backdrop-blur-sm">
+              {challenge.goal_type === 'distance' && 'Distance'}
+              {challenge.goal_type === 'duration' && 'Time'}
+              {challenge.goal_type === 'workouts' && 'Frequency'}
+            </Badge>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+              <Users className="h-4 w-4" />
+            </Button>
+          </div>
+          <CardTitle className="text-xl">{challenge.title}</CardTitle>
+          <CardDescription className="flex items-center">
+            <Calendar className="h-3 w-3 mr-1" /> 
+            {formatDateRange(challenge.start_date, challenge.end_date)}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <p className="text-sm text-gray-600 mb-4">{challenge.description}</p>
           
+          <div className="space-y-3">
+            <div className="flex justify-between items-center text-sm">
+              <span className="font-medium">Goal</span>
+              <span>{getGoalText(challenge)}</span>
+            </div>
+            <div className="flex justify-between items-center text-sm">
+              <span className="font-medium">Participants</span>
+              <div className="flex -space-x-2">
+              {challenge.participants.slice(0, 3).map((p, idx) => {
+const user = profiles.find(u => u.id === p.userId);
+return (
+<Avatar key={idx} className="h-6 w-6 border-2 border-white">
+{user ? (
+<>
+<AvatarImage src={user.avatar} alt={user.name}/>
+<AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+</>
+) : (
+<AvatarFallback>?</AvatarFallback>
+)}
+</Avatar>
+);
+})}
+
+                {challenge.participants.length > 3 && (
+                  <div className="h-6 w-6 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-xs">
+                    +{challenge.participants.length - 3}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex justify-between items-center text-sm">
+              <span className="font-medium">Your Progress</span>
+              <span>{challenge.participants.find(p => p.userId === '1')?.progress ?? 0}%</span>
+            </div>
+            <Progress value={challenge.participants.find(p => p.userId === userId)?.progress ?? 0} className="h-2" />
+          </div>
+        </CardContent>
+        <CardFooter className="border-t bg-gray-50 flex justify-between items-center pt-3 pb-3">
+          <div className="flex items-center">
+            <Avatar className="h-6 w-6 mr-2">
+              <AvatarImage src={creator?.avatar} alt={creator?.name} />
+              <AvatarFallback>{creator?.name.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <span className="text-xs text-gray-500">Created by {creator?.name}</span>
+          </div>
+          <Button variant="ghost" size="sm" className="h-8 p-0">
+            <Trophy className="h-4 w-4" />
+          </Button>
+        </CardFooter>
+      </Card>
+      );
+    })}
+
+    {filteredChallenges.length === 0 && (
+      <div className="col-span-full text-center py-10">
+        <p className="text-gray-500">No challenges to display.</p>
+      </div>
+    )}
+  </div>
+</TabsContent>
+
           <TabsContent value="active" className="space-y-0">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredChallenges.map((challenge) => {
-                const creator = getChallengeCreator(challenge.createdBy);
+                const creator = getChallengeCreator(challenge.created_by);
                 return (
                   <Card key={challenge.id} className="h-full overflow-hidden hover:shadow-md transition-shadow">
                     <CardHeader className="bg-gradient-to-r from-blue-100 to-purple-100 pb-2">
                       <div className="mb-2 flex justify-between items-start">
                         <Badge variant="outline" className="bg-white/70 backdrop-blur-sm">
-                          {challenge.goal.type === 'distance' && 'Distance'}
-                          {challenge.goal.type === 'duration' && 'Time'}
-                          {challenge.goal.type === 'workouts' && 'Frequency'}
+                          {challenge.goal_type === 'distance' && 'Distance'}
+                          {challenge.goal_type === 'duration' && 'Time'}
+                          {challenge.goal_type === 'workouts' && 'Frequency'}
                         </Badge>
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                           <Users className="h-4 w-4" />
@@ -280,7 +373,7 @@ setUserId(session?.user?.id);
                       <CardTitle className="text-xl">{challenge.title}</CardTitle>
                       <CardDescription className="flex items-center">
                         <Calendar className="h-3 w-3 mr-1" /> 
-                        {formatDateRange(challenge.startDate, challenge.endDate)}
+                        {formatDateRange(challenge.start_date, challenge.end_date)}
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="pt-4">
@@ -321,7 +414,7 @@ setUserId(session?.user?.id);
                           <span className="font-medium">Your Progress</span>
                           <span>{challenge.participants.find(p => p.userId === '1')?.progress ?? 0}%</span>
                         </div>
-                        <Progress value={challenge.participants.find(p => p.userId === '1')?.progress ?? 0} className="h-2" />
+                        <Progress value={challenge.participants.find(p => p.userId === userId)?.progress ?? 0} className="h-2" />
                       </div>
                     </CardContent>
                     <CardFooter className="border-t bg-gray-50 flex justify-between items-center pt-3 pb-3">
