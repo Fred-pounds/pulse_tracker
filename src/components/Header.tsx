@@ -64,7 +64,7 @@ const Header: React.FC = () => {
               <li><Link to="/" className={`${isActive('/') ? 'text-gray-800 font-medium' : 'text-gray-500'} hover:text-blue-600`}>Dashboard</Link></li>
               <li><Link to="/workouts" className={`${isActive('/workouts') ? 'text-gray-800 font-medium' : 'text-gray-500'} hover:text-blue-600`}>My Workouts</Link></li>
               <li><Link to="/challenges" className={`${isActive('/challenges') ? 'text-gray-800 font-medium' : 'text-gray-500'} hover:text-blue-600`}>Challenges</Link></li>
-              <li><Link to="/friends" className={`${isActive('/friends') ? 'text-gray-800 font-medium' : 'text-gray-500'} hover:text-blue-600`}>Friends</Link></li>
+              {/* <li><Link to="/friends" className={`${isActive('/friends') ? 'text-gray-800 font-medium' : 'text-gray-500'} hover:text-blue-600`}>Friends</Link></li> */}
             </ul>
           </nav>
         </div>
@@ -72,7 +72,6 @@ const Header: React.FC = () => {
         {/* Right: Avatar, Notifications, etc. */}
         <div className="flex items-center space-x-4">
           <div className="relative w-64 hidden md:block"><SearchBar /></div>
-          <button className="p-2 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100"><Bell size={20} /></button>
           
           {/* Avatar and Dropdown */}
           <div className="relative" ref={avatarRef}>
@@ -113,7 +112,7 @@ const Header: React.FC = () => {
               <li className="flex items-center py-2"><Home size={18} className={`mr-3 ${isActive('/') ? 'text-blue-600' : 'text-gray-500'}`} /><Link to="/" className={`${isActive('/') ? 'text-gray-800 font-medium' : 'text-gray-700'}`}>Dashboard</Link></li>
               <li className="flex items-center py-2"><BarChart2 size={18} className={`mr-3 ${isActive('/workouts') ? 'text-blue-600' : 'text-gray-500'}`} /><Link to="/workouts" className={`${isActive('/workouts') ? 'text-gray-800 font-medium' : 'text-gray-700'}`}>My Workouts</Link></li>
               <li className="flex items-center py-2"><Award size={18} className={`mr-3 ${isActive('/challenges') ? 'text-blue-600' : 'text-gray-500'}`} /><Link to="/challenges" className={`${isActive('/challenges') ? 'text-gray-800 font-medium' : 'text-gray-700'}`}>Challenges</Link></li>
-              <li className="flex items-center py-2"><Users size={18} className={`mr-3 ${isActive('/friends') ? 'text-blue-600' : 'text-gray-500'}`} /><Link to="/friends" className={`${isActive('/friends') ? 'text-gray-800 font-medium' : 'text-gray-700'}`}>Friends</Link></li>
+              {/* <li className="flex items-center py-2"><Users size={18} className={`mr-3 ${isActive('/friends') ? 'text-blue-600' : 'text-gray-500'}`} /><Link to="/friends" className={`${isActive('/friends') ? 'text-gray-800 font-medium' : 'text-gray-700'}`}>Friends</Link></li> */}
               <li className="border-t border-gray-100 mt-2 pt-2 flex items-center py-2"><User size={18} className="mr-3 text-gray-500" /><Link to="/profile" className="text-gray-700">Profile</Link></li>
               <li className="flex items-center py-2"><LogOut size={18} className="mr-3 text-gray-500" /><button onClick={handleLogout} className="text-gray-700">Logout</button></li>
             </ul>

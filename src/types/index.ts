@@ -50,6 +50,8 @@ export interface Challenge {
   created_at: string;
 }
 
+export interface Perf  { user_id: string; count: number };
+
 
 export interface LeaderboardEntry {
   user: {

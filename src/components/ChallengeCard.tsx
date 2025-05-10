@@ -72,9 +72,9 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge }) => {
             )}
           </div>
           
-          <a href="#" className="text-xs font-medium text-blue-600 hover:underline">
+          {/* <a href="#" className="text-xs font-medium text-blue-600 hover:underline">
             View Challenge
-          </a>
+          </a> */}
         </div>
       </CardContent>
     </Card>
